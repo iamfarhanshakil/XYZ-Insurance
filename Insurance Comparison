@@ -1,0 +1,63 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jun 10 21:49:25 2024
+
+@author: Farhan Shakil
+"""
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pdfplumber
+import re
+
+# Define the scope of the API access
+scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
+
+# Load the credentials from the JSON key file
+credentials = ServiceAccountCredentials.from_json_keyfile_name("E:\College\Python Programmes\phrasal-lyceum-426016-a9-c5f530204358.json", scope)
+
+# Authorize the gspread client with the credentials
+client = gspread.authorize(credentials)
+
+# Open the Google Sheet by URL
+spreadsheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1ZXZ96ndPRn4qZYDJ0cOKFTMF63NmKvI9CfCgmBNiYnU/edit?gid=0")
+
+# Access the first worksheet in the spreadsheet
+worksheet = spreadsheet.sheet1
+
+# Get the value from the first cell (A1)
+number_from_sheet = worksheet.cell(1, 1).value
+
+number_from_sheet = float(number_from_sheet.replace(",", ""))
+
+# Print the value from the Google Sheet
+print(f"Value in Google Sheet: {number_from_sheet}")
+
+# Use pdfplumber to open the PDF document
+with pdfplumber.open("Insurance Policy.pdf") as pdf:
+    # Extract text from the first page of the PDF
+    first_page_text = pdf.pages[0].extract_text()
+
+# Print the extracted text from the PDF
+print(first_page_text)
+
+# The pattern matches "Net Premium (INR)" followed by a currency value
+net_premium_pattern = r"Net Premium \(INR\) (\d{1,3}(?:,\d{3})*(?:\.\d{2})?)"
+
+# Search for the net premium value in the extracted text
+match = re.search(net_premium_pattern, first_page_text)
+
+# Extract the net premium value if found
+if match:
+    net_premium_pdf = float(match.group(1).replace(",", ""))
+    print("Net Premium extracted from PDF:", net_premium_pdf)
+else:
+    print("Net Premium not found in the extracted text.")
+
+# Compare the net premium value from the PDF with the value from the Google Sheet
+if net_premium_pdf > number_from_sheet:
+    print("The net premium mentioned in the insurance policy document is greater than the value from the Google Sheet.")
+elif net_premium_pdf < number_from_sheet:
+    print("The net premium mentioned in the insurance policy document is lesser than the value from the Google Sheet.")
+else:
+    print("The net premium mentioned in the insurance policy document is equal to the value from the Google Sheet.")
